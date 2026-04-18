@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Churn Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131c;
+      --card: #1a1a27;
+      --border: #2a2a3d;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --text: #f0f0f8;
+      --muted: #6b6b8a;
+      --glow: rgba(124, 58, 237, 0.3);
+    }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,58,237,0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 110%, rgba(6,182,212,0.08), transparent);
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      border: 1px solid rgba(6,182,212,0.3);
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      margin-bottom: 1.2rem;
+      background: rgba(6,182,212,0.05);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #f0f0f8 30%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.6rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+      appearance: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    select option { background: var(--surface); }
+
+    .submit-btn {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 1rem;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px rgba(124,58,237,0.25);
+    }
+
+    .submit-btn:hover {
+      background: #6d28d9;
+      box-shadow: 0 6px 32px rgba(124,58,237,0.4);
+    }
+
+    .submit-btn:active { transform: scale(0.98); }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Result panel */
+    #result-panel {
+      margin-top: 1.8rem;
+      display: none;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .result-inner {
+      border-radius: 14px;
+      padding: 1.8rem 2rem;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      gap: 1.6rem;
+      flex-wrap: wrap;
+    }
+
+    .result-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+
+    .result-icon.churn { background: rgba(239,68,68,0.15); border: 2px solid rgba(239,68,68,0.4); }
+    .result-icon.safe  { background: rgba(34,197,94,0.15);  border: 2px solid rgba(34,197,94,0.4); }
+
+    .result-text h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    .result-text h2.churn { color: var(--danger); }
+    .result-text h2.safe  { color: var(--success); }
+
+    .result-text p { color: var(--muted); font-size: 0.82rem; margin-top: 0.3rem; }
+
+    .prob-bar-wrap {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .prob-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .prob-track {
+      height: 8px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .prob-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.8s cubic-bezier(.4,0,.2,1);
+      background: linear-gradient(90deg, var(--accent), var(--danger));
+    }
+
+    .prob-fill.safe {
+      background: linear-gradient(90deg, var(--accent2), var(--success));
+    }
+
+    /* Error */
+    .error-box {
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      color: var(--danger);
+      font-size: 0.82rem;
+      margin-top: 1rem;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeDown { from { opacity:0; transform: translateY(-20px); } to { opacity:1; transform: none; } }
+    @keyframes fadeUp   { from { opacity:0; transform: translateY(20px);  } to { opacity:1; transform: none; } }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      letter-spacing: 0.07em;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">ML Prediction System</div>
+    <h1>Customer Churn<br>Predictor</h1>
+    <p class="subtitle">Enter customer data to predict churn probability</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">Customer Profile</div>
+
+    <div class="grid">
+      <div class="field">
+        <label for="age">Age</label>
+        <input type="number" id="age" placeholder="e.g. 35" min="0" max="120"/>
+      </div>
+      <div class="field">
+        <label for="gender">Gender</label>
+        <select id="gender">
+          <option value="">— Select —</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tenure">Tenure (months)</label>
+        <input type="number" id="tenure" placeholder="e.g. 24" min="0"/>
+      </div>
+      <div class="field">
+        <label for="usage_frequency">Usage Frequency</label>
+        <input type="number" id="usage_frequency" placeholder="e.g. 14" min="0"/>
+      </div>
+    </div>
+
+    <div class="section-label">Interaction &amp; Payment</div>
+
+    <div class="grid">
+      <div class="field">
+        <label for="support_calls">Support Calls</label>
+        <input type="number" id="support_calls" placeholder="e.g. 5" min="0"/>
+      </div>
+      <div class="field">
+        <label for="payment_delay">Payment Delay (days)</label>
+        <input type="number" id="payment_delay" placeholder="e.g. 10" min="0"/>
+      </div>
+      <div class="field">
+        <label for="total_spend">Total Spend ($)</label>
+        <input type="number" id="total_spend" placeholder="e.g. 932" min="0"/>
+      </div>
+      <div class="field">
+        <label for="last_interaction">Last Interaction (days)</label>
+        <input type="number" id="last_interaction" placeholder="e.g. 17" min="0"/>
+      </div>
+    </div>
+
+    <div class="section-label">Subscription Details</div>
+
+    <div class="grid">
+      <div class="field">
+        <label for="subscription_type">Subscription Type</label>
+        <select id="subscription_type">
+          <option value="">— Select —</option>
+          <option value="Basic">Basic</option>
+          <option value="Standard">Standard</option>
+          <option value="Premium">Premium</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="contract_length">Contract Length</label>
+        <select id="contract_length">
+          <option value="">— Select —</option>
+          <option value="Monthly">Monthly</option>
+          <option value="Quarterly">Quarterly</option>
+          <option value="Annual">Annual</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="predict-btn" onclick="predict()">
+      Predict Churn
+    </button>
+
+    <div id="error-box" class="error-box" style="display:none;"></div>
+
+    <div id="result-panel">
+      <div class="result-inner" id="result-inner">
+        <div class="result-icon" id="result-icon"></div>
+        <div class="result-text">
+          <h2 id="result-heading"></h2>
+          <p id="result-sub"></p>
+        </div>
+        <div class="prob-bar-wrap" id="prob-wrap" style="display:none">
+          <div class="prob-label">
+            <span>Churn Probability</span>
+            <span id="prob-pct"></span>
+          </div>
+          <div class="prob-track">
+            <div class="prob-fill" id="prob-fill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Powered by Flask &amp; scikit-learn &nbsp;·&nbsp; model.pkl</footer>
+</div>
+
+<script>
+  async function predict() {
+    const btn = document.getElementById('predict-btn');
+    const errorBox = document.getElementById('error-box');
+    errorBox.style.display = 'none';
+    document.getElementById('result-panel').style.display = 'none';
+
+    const fields = {
+      age: document.getElementById('age').value,
+      gender: document.getElementById('gender').value,
+      tenure: document.getElementById('tenure').value,
+      usage_frequency: document.getElementById('usage_frequency').value,
+      support_calls: document.getElementById('support_calls').value,
+      payment_delay: document.getElementById('payment_delay').value,
+      subscription_type: document.getElementById('subscription_type').value,
+      contract_length: document.getElementById('contract_length').value,
+      total_spend: document.getElementById('total_spend').value,
+      last_interaction: document.getElementById('last_interaction').value,
+    };
+
+    // Validate
+    for (const [key, val] of Object.entries(fields)) {
+      if (val === '' || val === null) {
+        showError(`Please fill in all fields. Missing: "${key.replace(/_/g,' ')}"`);
+        return;
+      }
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Predicting…';
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields)
+      });
+
+      const data = await res.json();
+
+      if (data.error) { showError(data.error); return; }
+
+      const isChurn = data.churn === 1;
+      const panel = document.getElementById('result-panel');
+      const icon  = document.getElementById('result-icon');
+      const heading = document.getElementById('result-heading');
+      const sub = document.getElementById('result-sub');
+      const probWrap = document.getElementById('prob-wrap');
+      const probPct = document.getElementById('prob-pct');
+      const probFill = document.getElementById('prob-fill');
+
+      icon.textContent = isChurn ? '⚠️' : '✅';
+      icon.className = 'result-icon ' + (isChurn ? 'churn' : 'safe');
+      heading.textContent = data.churn_label;
+      heading.className = isChurn ? 'churn' : 'safe';
+      sub.textContent = isChurn
+        ? 'This customer is at high risk of churning. Consider retention actions.'
+        : 'This customer is likely to stay. Keep up the good service!';
+
+      if (data.probability !== null && data.probability !== undefined) {
+        probWrap.style.display = 'block';
+        probPct.textContent = data.probability + '%';
+        setTimeout(() => {
+          probFill.style.width = data.probability + '%';
+          probFill.className = 'prob-fill ' + (isChurn ? '' : 'safe');
+        }, 100);
+      } else {
+        probWrap.style.display = 'none';
+      }
+
+      panel.style.display = 'block';
+    } catch (err) {
+      showError('Could not connect to the server. Make sure Flask is running.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Predict Churn';
+    }
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = '⚠ ' + msg;
+    box.style.display = 'block';
+    document.getElementById('predict-btn').disabled = false;
+    document.getElementById('predict-btn').innerHTML = 'Predict Churn';
+  }
+</script>
+</body>
+</html>
